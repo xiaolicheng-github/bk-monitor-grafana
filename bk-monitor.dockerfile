@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-
+ARG COMMIT_ID=unknown
 ARG BASE_IMAGE=alpine:3.19.1
 ARG JS_IMAGE=node:20-alpine
 ARG CHIP=amd64
@@ -46,10 +46,13 @@ RUN cd /opt/bitnami/grafana/public/app/plugins/datasource/ && \
     rm -rf loki prometheus influxdb graphite mssql jaeger tempo zipkin cloudwatch cloud-monitoring grafana-azure-monitor-datasource postgres opentsdb
 
 # Install plugins
-COPY plugins /tmp/plugins
-RUN unzip -o "/tmp/plugins/*.zip" -d /opt/bitnami/grafana/plugins && rm -rf /tmp/plugins
+COPY plugins /opt/bitnami/grafana/plugins
+RUN unzip -o "/opt/bitnami/grafana/plugins/*.zip" -d /opt/bitnami/grafana/plugins && rm -rf /opt/bitnami/grafana/plugins/*.zip
 
 # Fix permissions
 RUN chmod g+rwX /opt/bitnami/grafana/public /opt/bitnami/grafana/plugins
+
+ENV COMMIT_ID=${COMMIT_ID}
+RUN echo $COMMIT_ID > /opt/bitnami/grafana/VERSION
 
 USER 1001
