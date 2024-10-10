@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react';
+import React, { PureComponent, useState } from 'react';
 import { Subscription } from 'rxjs';
 
 import {
@@ -46,11 +46,13 @@ import { getTimeSrv, TimeSrv } from '../services/TimeSrv';
 import { DashboardModel, PanelModel } from '../state';
 import { getPanelChromeProps } from '../utils/getPanelChromeProps';
 import { loadSnapshotData } from '../utils/loadSnapshotData';
+import { QueryData } from '../utils/transfrom-targets';
 
 import { PanelHeaderMenuWrapper } from './PanelHeader/PanelHeaderMenuWrapper';
 import { PanelLoadTimeMonitor } from './PanelLoadTimeMonitor';
 import { seriesVisibilityConfigFactory } from './SeriesVisibilityConfigFactory';
 import { liveTimer } from './liveTimer';
+import { MonitorStrategy } from './monitor-strategy';
 import { PanelOptionsLogger } from './panelOptionsLogger';
 
 const DEFAULT_PLUGIN_ERROR = 'Error in plugin';
@@ -77,6 +79,8 @@ export interface State {
   context: PanelContext;
   data: PanelData;
   liveTime?: TimeRange;
+  showAddStrategy: boolean;
+  monitorTarget?: QueryData;
 }
 
 export class PanelStateWrapper extends PureComponent<Props, State> {
@@ -113,6 +117,8 @@ export class PanelStateWrapper extends PureComponent<Props, State> {
         onUpdateData: this.onUpdateData,
       },
       data: this.getInitialPanelDataState(),
+      showAddStrategy: false,
+      monitorTarget: undefined,
     };
 
     if (config.featureToggles.panelMonitoring && this.getPanelContextApp() === CoreApp.PanelEditor) {
@@ -490,7 +496,15 @@ export class PanelStateWrapper extends PureComponent<Props, State> {
 
     dispatch(applyFilterFromTable({ datasource: datasourceRef, key, operator, value }));
   };
-
+  onClickAddStrategy = (payload: QueryData) => {
+    if (payload?.refId) {
+      this.setState({ showAddStrategy: true, monitorTarget: payload });
+      console.info('add strategy', payload, '+++++++++++++++++++++++');
+    }
+  };
+  onHideModal = () => {
+    this.setState({ showAddStrategy: false });
+  };
   renderPanelContent(innerWidth: number, innerHeight: number) {
     const { panel, plugin, dashboard } = this.props;
     const { renderCounter, data } = this.state;
@@ -514,7 +528,6 @@ export class PanelStateWrapper extends PureComponent<Props, State> {
     // Update the event filter (dashboard settings may have changed)
     // Yes this is called ever render for a function that is triggered on every mouse move
     this.eventFilter.onlyLocal = dashboard.graphTooltip === 0;
-
     return (
       <>
         <PanelContextProvider value={this.state.context}>
@@ -546,57 +559,71 @@ export class PanelStateWrapper extends PureComponent<Props, State> {
 
   render() {
     const { dashboard, panel, width, height, plugin } = this.props;
-    const { errorMessage, data } = this.state;
+    const { errorMessage, data, showAddStrategy } = this.state;
     const { transparent } = panel;
-
     const panelChromeProps = getPanelChromeProps({ ...this.props, data });
-
     // Shift the hover menu down if it's on the top row so it doesn't get clipped by topnav
     const hoverHeaderOffset = (panel.gridPos?.y ?? 0) === 0 ? -16 : undefined;
 
     const menu = (
       <div data-testid="panel-dropdown">
-        <PanelHeaderMenuWrapper panel={panel} dashboard={dashboard} loadingState={data.state} />
+        <PanelHeaderMenuWrapper
+          panel={panel}
+          dashboard={dashboard}
+          loadingState={data.state}
+          onClickAddStrategy={this.onClickAddStrategy}
+        />
       </div>
     );
 
     return (
-      <PanelChrome
-        width={width}
-        height={height}
-        title={panelChromeProps.title}
-        loadingState={data.state}
-        statusMessage={errorMessage}
-        statusMessageOnClick={panelChromeProps.onOpenErrorInspect}
-        description={panelChromeProps.description}
-        titleItems={panelChromeProps.titleItems}
-        menu={this.props.hideMenu ? undefined : menu}
-        dragClass={panelChromeProps.dragClass}
-        dragClassCancel="grid-drag-cancel"
-        padding={panelChromeProps.padding}
-        hoverHeaderOffset={hoverHeaderOffset}
-        hoverHeader={panelChromeProps.hasOverlayHeader()}
-        displayMode={transparent ? 'transparent' : 'default'}
-        onCancelQuery={panelChromeProps.onCancelQuery}
-        onOpenMenu={panelChromeProps.onOpenMenu}
-      >
-        {(innerWidth, innerHeight) => (
-          <>
-            <ErrorBoundary
-              dependencies={[data, plugin, panel.getOptions()]}
-              onError={this.onPanelError}
-              onRecover={this.onPanelErrorRecover}
-            >
-              {({ error }) => {
-                if (error) {
-                  return null;
-                }
-                return this.renderPanelContent(innerWidth, innerHeight);
-              }}
-            </ErrorBoundary>
-          </>
+      <>
+        <PanelChrome
+          width={width}
+          height={height}
+          title={panelChromeProps.title}
+          loadingState={data.state}
+          statusMessage={errorMessage}
+          statusMessageOnClick={panelChromeProps.onOpenErrorInspect}
+          description={panelChromeProps.description}
+          titleItems={panelChromeProps.titleItems}
+          menu={this.props.hideMenu ? undefined : menu}
+          dragClass={panelChromeProps.dragClass}
+          dragClassCancel="grid-drag-cancel"
+          padding={panelChromeProps.padding}
+          hoverHeaderOffset={hoverHeaderOffset}
+          hoverHeader={panelChromeProps.hasOverlayHeader()}
+          displayMode={transparent ? 'transparent' : 'default'}
+          onCancelQuery={panelChromeProps.onCancelQuery}
+          onOpenMenu={panelChromeProps.onOpenMenu}
+        >
+          {(innerWidth, innerHeight) => (
+            <>
+              <ErrorBoundary
+                dependencies={[data, plugin, panel.getOptions()]}
+                onError={this.onPanelError}
+                onRecover={this.onPanelErrorRecover}
+              >
+                {({ error }) => {
+                  if (error) {
+                    return null;
+                  }
+                  return this.renderPanelContent(innerWidth, innerHeight);
+                }}
+              </ErrorBoundary>
+            </>
+          )}
+        </PanelChrome>
+        {this.state.monitorTarget && panel && dashboard && showAddStrategy && (
+          <MonitorStrategy
+            panel={panel}
+            dashboard={dashboard}
+            isOpen={showAddStrategy}
+            onHideModal={() => this.onHideModal()}
+            monitorTarget={this.state.monitorTarget}
+          />
         )}
-      </PanelChrome>
+      </>
     );
   }
 }

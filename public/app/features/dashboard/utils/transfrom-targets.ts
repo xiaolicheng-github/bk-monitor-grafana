@@ -1,3 +1,5 @@
+import { cloneDeep } from 'lodash';
+
 import { getTemplateSrv } from '../../templating/template_srv';
 
 export interface TargetItem {
@@ -6,20 +8,20 @@ export interface TargetItem {
 }
 
 export interface QueryData {
-  expression: string;        // 查询表达式
-  alias: string;             // 查询结果的别名
-  display: boolean;          // 是否显示查询结果
-  query_configs: QueryConfig[];  // 查询配置数组
-  refId: string;             // 查询的引用 ID
-  host: TargetItem[];        // 目标主机数组
-  module: TargetItem[];      // 目标模块数组
-  cluster: TargetItem[];     // 目标集群数组
-  only_promql?: boolean;     // 是否仅使用 PromQL 查询语言
-  source?: string;           // 数据源
-  expressionList?: ExpresionItem[];  // 表达式项数组
-  mode: string;              // 查询模式
+  expression: string; // 查询表达式
+  alias: string; // 查询结果的别名
+  display: boolean; // 是否显示查询结果
+  query_configs: QueryConfig[]; // 查询配置数组
+  refId: string; // 查询的引用 ID
+  host: TargetItem[]; // 目标主机数组
+  module: TargetItem[]; // 目标模块数组
+  cluster: TargetItem[]; // 目标集群数组
+  only_promql?: boolean; // 是否仅使用 PromQL 查询语言
+  source?: string; // 数据源
+  expressionList?: ExpressionItem[]; // 表达式项数组
+  mode: string; // 查询模式
 }
-export interface ExpresionItem {
+export interface ExpressionItem {
   expression: string;
   functions: FunctionItem[];
   alias: string;
@@ -109,7 +111,7 @@ export const handleTransformOldQuery = (data: any) => {
     refId: 'a',
     query_configs: config,
     ...handleTransformOldTarget(data),
-    mode: (data.mode === 'code' || data.only_promql) ? 'code' : 'ui',
+    mode: data.mode === 'code' || data.only_promql ? 'code' : 'ui',
   };
   return newQuery;
 };
@@ -198,7 +200,7 @@ export const buildWhereVariables = (values: string[] | string) => {
   return valList;
 };
 export const buildPromqlVariables = (promql: string) => {
-  return  getTemplateSrv().replace(promql || '', {}, (value: any, variable: any, formatValue: any) => {
+  return getTemplateSrv().replace(promql || '', {}, (value: any, variable: any, formatValue: any) => {
     if (Array.isArray(value)) {
       const v = value
         .map((v) => {
@@ -210,7 +212,7 @@ export const buildPromqlVariables = (promql: string) => {
     }
     return formatValue(Array.isArray(value) ? value[0] : value, 'glob', variable);
   });
-}
+};
 export const getMetricId = (
   data_source_label: string,
   data_type_label: string,
@@ -245,40 +247,107 @@ export const getMetricId = (
   }
   return '';
 };
- /**
-  * @param inter 汇聚周期
-  * @param unit 单位
-  * @returns {number} 转换后的汇聚周期 单位固定 s
-  */
-export const repalceInterval = (inter: string | number, unit: string) => {
- let interval: string | number = inter;
- if (typeof interval === 'string' && interval !== 'auto') {
-   interval = +getTemplateSrv().replace(interval)
-     .replace(/(\d+)(.*)/, (match: string, p1: string, p2: string) => {
-       let str: string | number = p1 || '10';
-       switch (p2) {
-         case 'm':
-           str = +p1 * 60;
-           break;
-         case 'h':
-           str = +p1 * 60 * 60;
-           break;
-         case 'd':
-           str = +p1 * 60 * 60 * 24;
-           break;
-         case 'w':
-           str = +p1 * 60 * 60 * 24 * 7;
-           break;
-         default:
-           str = (+p1 || 10) * (unit === 'm' ? 60 : 1);
-           break;
-       }
-       return str.toString();
-     });
- } else if (typeof interval === 'number') {
-   if (unit === 'm') {
-     interval = interval * 60;
-   }
- }
- return interval || (unit === 'm' ? 60 : 10);
+/**
+ * @param inter 汇聚周期
+ * @param unit 单位
+ * @returns {number} 转换后的汇聚周期 单位固定 s
+ */
+export const replaceInterval = (inter: string | number, unit: string) => {
+  let interval: string | number = inter;
+  if (typeof interval === 'string' && interval !== 'auto') {
+    interval = +getTemplateSrv()
+      .replace(interval)
+      .replace(/(\d+)(.*)/, (match: string, p1: string, p2: string) => {
+        let str: string | number = p1 || '10';
+        switch (p2) {
+          case 'm':
+            str = +p1 * 60;
+            break;
+          case 'h':
+            str = +p1 * 60 * 60;
+            break;
+          case 'd':
+            str = +p1 * 60 * 60 * 24;
+            break;
+          case 'w':
+            str = +p1 * 60 * 60 * 24 * 7;
+            break;
+          default:
+            str = (+p1 || 10) * (unit === 'm' ? 60 : 1);
+            break;
+        }
+        return str.toString();
+      });
+  } else if (typeof interval === 'number') {
+    if (unit === 'm') {
+      interval = interval * 60;
+    }
+  }
+  return interval || (unit === 'm' ? 60 : 10);
+};
+export interface ParamItem {
+  dataList: any[];
+  queryString: string;
 }
+export const buildUrlParams = (targetList: any[], needReplaceVariable = true): ParamItem => {
+  const dataList: any[] = [];
+  let metricIdMap: Record<string, string> = {};
+  targetList.forEach((item: any) => {
+    let data: QueryData = cloneDeep(item);
+    if (item?.data?.metric?.id?.length > 3) {
+      data = handleTransformOldQuery(item.data);
+    }
+    data.query_configs?.forEach?.((config) => {
+      config.where = config.where?.map((set) => ({
+        ...set,
+        value: needReplaceVariable ? buildWhereVariables(set.value) : set.value,
+      }));
+      config.functions =
+        config.functions
+          ?.filter?.((item) => item.id && !['top', 'bottom'].includes(item.id))
+          .map((func) => ({
+            ...func,
+            params: func.params?.map((set) => ({
+              ...set,
+              value:
+                needReplaceVariable && typeof set.value === 'string' ? getTemplateSrv().replace(set.value) : set.value,
+            })),
+          })) || [];
+      config.interval = replaceInterval(config.interval, config.interval_unit);
+      config.interval_unit = 's';
+      if (item.mode !== 'code') {
+        const metricId = getMetricId(
+          config.data_source_label,
+          config.data_type_label,
+          config.metric_field,
+          config.data_label || config.result_table_id,
+          config.index_set_id
+        );
+        metricId && (metricIdMap[metricId] = 'set');
+      }
+    });
+    if (data.expression?.length) {
+      data.expressionList = [
+        {
+          expression: data.expression,
+          active: data.display,
+          functions: [],
+          alias: data.alias,
+        },
+      ];
+    }
+    if (data.source?.length) {
+      data.source = needReplaceVariable ? buildPromqlVariables(data.source) : data.source;
+    }
+    const { alias, display, expression, ...props } = data;
+    dataList.push(props);
+  });
+  let queryString = '';
+  Object.keys(metricIdMap).forEach((metricId) => {
+    queryString += `${queryString.length ? ' or ' : ''}指标ID : ${metricId}`;
+  });
+  return {
+    dataList,
+    queryString,
+  };
+};

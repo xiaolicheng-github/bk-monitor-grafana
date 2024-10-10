@@ -1,10 +1,9 @@
-import {cloneDeep} from 'lodash';
+import { cloneDeep } from 'lodash';
 
 import {
   getTimeZone,
   PanelMenuItem,
   PluginExtensionPoints,
-  urlUtil,
   type PluginExtensionPanelContext,
   DateTime,
 } from '@grafana/data';
@@ -12,7 +11,6 @@ import { AngularComponent, getPluginLinkExtensions, locationService } from '@gra
 import { PanelCtrl } from 'app/angular/panel/panel_ctrl';
 import { t } from 'app/core/internationalization';
 import { contextSrv } from 'app/core/services/context_srv';
-import { panelToRuleFormValues } from 'app/features/alerting/unified/utils/rule-form';
 import { DashboardModel } from 'app/features/dashboard/state/DashboardModel';
 import { PanelModel } from 'app/features/dashboard/state/PanelModel';
 import {
@@ -29,116 +27,53 @@ import { InspectTab } from 'app/features/inspector/types';
 import { isPanelModelLibraryPanel } from 'app/features/library-panels/guard';
 import { createExtensionSubMenu } from 'app/features/plugins/extensions/utils';
 
-import { getCreateAlertInMenuAvailability } from '../../alerting/unified/utils/access-control';
 // import { navigateToExplore } from '../../explore/state/main';
-import { getTemplateSrv } from '../../templating/template_srv'
 import { getTimeSrv } from '../services/TimeSrv';
 
-import { handleTransformOldQuery, buildWhereVariables, QueryData, getMetricId, buildPromqlVariables, repalceInterval } from './transfrom-targets';
+import { handleTransformOldQuery, buildUrlParams, QueryData } from './transfrom-targets';
 const bkmonitorDatasource = ['bkmonitor-timeseries-datasource', 'bkmonitor-event-datasource'];
-const isEnLang = !!document.cookie?.includes('blueking_language=en')
+const isEnLang = !!document.cookie?.includes('blueking_language=en');
 declare global {
   interface Window {
-    grafanaBootData: any;
     graphWatermark: boolean;
   }
 }
-interface ParamItem {
-  dataList: any[];
-  queryString: string;
-}
+
 export function getPanelMenu(
   dashboard: DashboardModel,
   panel: PanelModel,
   angularComponent?: AngularComponent | null
 ): PanelMenuItem[] {
-  const buildUrlParams = (targetList: any[]): ParamItem => {
-    const dataList: any[] = [];
-    let metriIdMap: Record<string, string> = {};
-    targetList.forEach((item: any) => {
-      let data: QueryData = cloneDeep(item);
-      if (item?.data?.metric?.id?.length > 3) {
-        data = handleTransformOldQuery(item.data);
-      }
-      data.query_configs?.forEach?.((config) => {
-        config.where = config.where?.map((set) => ({
-          ...set,
-          value: buildWhereVariables(set.value),
-        }));
-        config.functions = config.functions?.filter?.((item) => item.id && !['top', 'bottom'].includes(item.id))
-          .map(func => ({
-            ...func,
-            params: func.params?.map(set => ({
-              ...set,
-              value: typeof set.value === 'string'
-                ? getTemplateSrv().replace(set.value)
-                : set.value,
-            })),
-          })) || [];
-        config.interval = repalceInterval(config.interval, config.interval_unit);
-        config.interval_unit = 's'
-        if(item.mode !== 'code') {
-          const metriId = getMetricId(
-            config.data_source_label,
-            config.data_type_label,
-            config.metric_field,
-            config.data_label || config.result_table_id,
-            config.index_set_id
-          );
-          metriId && (metriIdMap[metriId] = 'set');
-        }
-        // metriId && (queryString += `${queryString.length ? ' or ' : ''}指标ID : ${metriId}`)
-      });
-      if (data.expression?.length) {
-        data.expressionList = [
-          {
-            expression: data.expression,
-            active: data.display,
-            functions: [],
-            alias: data.alias,
-          },
-        ];
-      }
-      if(data.source?.length) {
-        data.source = buildPromqlVariables(data.source)
-      }
-      const { alias, display, expression, ...props } = data;
-      dataList.push(props);
-    });
-    let queryString = '';
-    Object.keys(metriIdMap).forEach((metricId) => {
-      queryString += `${queryString.length ? ' or ' : ''}指标ID : ${metricId}`;
-    });
-    return {
-      dataList,
-      queryString,
-    };
-  };
   //  添加策略事件
   const onAddStrategy = (target: any) => {
-    const { dataList } = buildUrlParams([target]);
+    const { dataList } = buildUrlParams([target], false);
     console.info('新增策略参数：', dataList);
     if (dataList?.length) {
-      const [dataItem] = dataList
-      let monitorUrl = ''
-      // promql
-      if(dataItem?.mode === 'code' && dataItem?.source?.length) {
-        monitorUrl =  `${location.href.split('/grafana')[0]}/?bizId=${
-          (window.grafanaBootData as any).user.orgName
-        }#/strategy-config/add?mode=code&data=${encodeURIComponent(JSON.stringify({
-          mode: 'code',
-          data: [{
-            promql: dataItem.source,
-            step: dataItem.step || 60
-          }]
-        }))}`;
-      } else {
-         monitorUrl = `${location.href.split('/grafana')[0]}/?bizId=${
-          (window.grafanaBootData as any).user.orgName
-        }#/strategy-config/add?data=${encodeURIComponent(JSON.stringify(dataList[0]))}`;
-      }
-      console.info(monitorUrl);
-      window.open(monitorUrl);
+      return dataList[0];
+      // const [dataItem] = dataList;
+      // let monitorUrl = '';
+      // // promql
+      // if (dataItem?.mode === 'code' && dataItem?.source?.length) {
+      //   monitorUrl = `${location.href.split('/grafana')[0]}/?bizId=${
+      //     (window.grafanaBootData as any).user.orgName
+      //   }#/strategy-config/add?mode=code&data=${encodeURIComponent(
+      //     JSON.stringify({
+      //       mode: 'code',
+      //       data: [
+      //         {
+      //           promql: dataItem.source,
+      //           step: dataItem.step || 60,
+      //         },
+      //       ],
+      //     })
+      //   )}`;
+      // } else {
+      //   monitorUrl = `${location.href.split('/grafana')[0]}/?bizId=${
+      //     (window.grafanaBootData as any).user.orgName
+      //   }#/strategy-config/add?data=${encodeURIComponent(JSON.stringify(dataList[0]))}`;
+      // }
+      // console.info(monitorUrl);
+      // window.open(monitorUrl);
     }
   };
   //  数据检索事件
@@ -294,76 +229,91 @@ export function getPanelMenu(
     onClick: onSharePanel,
     shortcut: 'p s',
   });
-  if (dashboard.canEditPanel(panel)) { 
+  if (dashboard.canEditPanel(panel)) {
     // add custom menu 添加策略 、 数据检索
-    if (
-      !window.is_external &&
-      dashboard.canEditPanel(panel) &&
-      panel.targets.length
-    ) {
-      const targetList = panel.targets.filter((target) => target && !target.hide).map((item: any) => {
-        let data: QueryData = cloneDeep(item);
-        // 处理老版本数据
-        if (item.data?.metric?.id?.length > 3) {
-          data = handleTransformOldQuery(item.data);
-        }
-        return {
-          ...data,
-          mode: (item.mode === 'code' || item.only_promql) ? 'code' : 'ui',
-          refId: item.refId
-        };
-      });
+    if (!window.is_external && dashboard.canEditPanel(panel) && panel.targets.length) {
+      const targetList = panel.targets
+        .filter((target) => target && !target.hide)
+        .map((item: any) => {
+          let data: QueryData = cloneDeep(item);
+          // 处理老版本数据
+          if (item.data?.metric?.id?.length > 3) {
+            data = handleTransformOldQuery(item.data);
+          }
+          return {
+            ...data,
+            mode: item.mode === 'code' || item.only_promql ? 'code' : 'ui',
+            refId: item.refId,
+          };
+        });
       const strategySubMenu: PanelMenuItem[] = [];
       const dataRetrievalSubMenu: PanelMenuItem[] = [];
       const alertSubMenu: PanelMenuItem[] = [];
+      const relateStrategySubMenu: PanelMenuItem[] = [];
       targetList.forEach((target: any) => {
-        if(target?.datasource?.type) {
-          if(!bkmonitorDatasource.includes(target.datasource.type)) {
+        if (target?.datasource?.type) {
+          if (!bkmonitorDatasource.includes(target.datasource.type)) {
             return;
           }
         }
-        if(((target.mode === 'code' || target.only_promql) && target.source?.length) || target.query_configs?.length) {
-            strategySubMenu.push({
-              text: 'Query ' + (target.refId || target.source),
-              onClick: (event: React.MouseEvent<any>) => {
-                event.preventDefault();
-                onAddStrategy(target)
-              },
-            })
-            dataRetrievalSubMenu.push({
-              text: 'Query ' + (target.refId || target.source),
-              onClick: (event: React.MouseEvent<any>) => {
-                event.preventDefault();
-                onDataRetrieval(target)
-              },
-            })
-            alertSubMenu.push({
-              text: 'Query ' + (target.refId || target.source),
-              onClick: (event: React.MouseEvent<any>) => {
-                event.preventDefault();
-                onRelateAlert(target)
-              },
-            })
+        if (((target.mode === 'code' || target.only_promql) && target.source?.length) || target.query_configs?.length) {
+          strategySubMenu.push({
+            text: 'Query ' + (target.refId || target.source),
+            onClick: (event: React.MouseEvent<any>) => {
+              event.preventDefault();
+              return onAddStrategy(target);
+            },
+          });
+          relateStrategySubMenu.push({
+            text: 'Query ' + (target.refId || target.source),
+            onClick: () => {
+              return target;
+            },
+          });
+          dataRetrievalSubMenu.push({
+            text: 'Query ' + (target.refId || target.source),
+            onClick: (event: React.MouseEvent<any>) => {
+              event.preventDefault();
+              onDataRetrieval(target);
+            },
+          });
+          alertSubMenu.push({
+            text: 'Query ' + (target.refId || target.source),
+            onClick: (event: React.MouseEvent<any>) => {
+              event.preventDefault();
+              onRelateAlert(target);
+            },
+          });
         }
-      })
-      strategySubMenu.length && menu.push({
-        type: strategySubMenu.length > 1 ? 'submenu' : undefined,
-        text: !isEnLang ? '添加策略' : 'Add Rule',
-        iconClassName: 'signal',
-        ...(strategySubMenu.length > 1 ? {subMenu: strategySubMenu} : {onClick: strategySubMenu[0].onClick})
       });
+      strategySubMenu.length &&
+        menu.push({
+          type: strategySubMenu.length > 1 ? 'submenu' : undefined,
+          text: !isEnLang ? '添加策略' : 'Add Rule',
+          iconClassName: 'signal',
+          ...(strategySubMenu.length > 1 ? { subMenu: strategySubMenu } : { onClick: strategySubMenu[0].onClick }),
+        });
       dataRetrievalSubMenu.length &&
         menu.push({
           type: dataRetrievalSubMenu.length > 1 ? 'submenu' : undefined,
           text: !isEnLang ? '数据检索' : 'Explore',
           iconClassName: 'search',
-          ...(dataRetrievalSubMenu.length > 1 ? {subMenu: dataRetrievalSubMenu} : {onClick: dataRetrievalSubMenu[0].onClick})
-      });
-      alertSubMenu.length && menu.push({
-        type: alertSubMenu.length > 1 ? 'submenu' : undefined,
-        text: !isEnLang ? '相关告警' : 'Related Alarms',
-        iconClassName: 'heart-break',
-        ...(alertSubMenu.length > 1 ? {subMenu: alertSubMenu} : {onClick: alertSubMenu[0].onClick})
+          ...(dataRetrievalSubMenu.length > 1
+            ? { subMenu: dataRetrievalSubMenu }
+            : { onClick: dataRetrievalSubMenu[0].onClick }),
+        });
+      alertSubMenu.length &&
+        menu.push({
+          type: alertSubMenu.length > 1 ? 'submenu' : undefined,
+          text: !isEnLang ? '相关告警' : 'Related Alarms',
+          iconClassName: 'heart-break',
+          ...(alertSubMenu.length > 1 ? { subMenu: alertSubMenu } : { onClick: alertSubMenu[0].onClick }),
+        });
+      menu.push({
+        type: 'submenu',
+        text: !isEnLang ? '关联策略' : 'Relate Rule',
+        iconClassName: 'heart',
+        subMenu: relateStrategySubMenu,
       });
     }
   }
@@ -421,21 +371,8 @@ export function getPanelMenu(
     subMenu: inspectMenu,
   });
 
-  const createAlert = async () => {
-    const formValues = await panelToRuleFormValues(panel, dashboard);
-
-    const ruleFormUrl = urlUtil.renderUrl('/alerting/new', {
-      defaults: JSON.stringify(formValues),
-      returnTo: location.pathname + location.search,
-    });
-
-    locationService.push(ruleFormUrl);
-  };
-
-
   const subMenu: PanelMenuItem[] = [];
   const canEdit = dashboard.canEditPanel(panel);
-  const isCreateAlertMenuOptionAvailable = getCreateAlertInMenuAvailability();
 
   if (!(panel.isViewing || panel.isEditing)) {
     if (canEdit) {
@@ -469,7 +406,6 @@ export function getPanelMenu(
       });
     }
   }
-
 
   // add old angular panel options
   if (angularComponent) {
@@ -507,12 +443,6 @@ export function getPanelMenu(
   // When editing hide most actions
   if (panel.isEditing) {
     subMenu.length = 0;
-    // if (isCreateAlertMenuOptionAvailable) {
-    //   subMenu.push({
-    //     text: t('panel.header-menu.new-alert-rule', `New alert rule`),
-    //     onClick: onCreateAlert,
-    //   });
-    // }
   }
 
   if (canEdit && panel.plugin && !panel.plugin.meta.skipDataQuery) {

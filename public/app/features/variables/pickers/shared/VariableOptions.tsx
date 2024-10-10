@@ -20,9 +20,23 @@ export interface Props extends React.HTMLProps<HTMLUListElement>, Themeable2 {
    * Used for aria-controls
    */
   id: string;
+  fixedPosition?: Partial<DOMRect>;
 }
 
-class VariableOptions extends PureComponent<Props> {
+class VariableOptions extends PureComponent<
+  Props,
+  {
+    top: number;
+    height: number;
+  }
+> {
+  constructor(props: Props) {
+    super(props);
+    this.state = {
+      top: 0,
+      height: 0,
+    };
+  }
   onToggle = (option: VariableOption) => (event: React.MouseEvent<HTMLButtonElement>) => {
     const clearOthers = event.shiftKey || event.ctrlKey || event.metaKey;
     this.handleEvent(event);
@@ -38,14 +52,67 @@ class VariableOptions extends PureComponent<Props> {
     event.preventDefault();
     event.stopPropagation();
   }
+  getBestDomPosition = (top: number, maxHeight: number, height: number) => {
+    // 获取窗口的高度
+    const windowHeight = window.innerHeight;
 
+    // 如果元素的高度大于最大高度，则将高度缩小到最大高度
+    let adjustedHeight = height > maxHeight ? maxHeight : height;
+
+    // 计算元素的底部位置
+    let bottom = top + adjustedHeight;
+
+    // 如果元素的底部超出了窗口的高度，则调整顶部位置
+    if (bottom > windowHeight) {
+      // 尝试向上展开
+      top = windowHeight - adjustedHeight;
+      // 确保顶部位置不小于0
+      if (top < 0) {
+        top = 0;
+        adjustedHeight = windowHeight; // 调整高度以适应窗口
+      }
+    }
+
+    // 如果向上展开的顶部位置仍然超出屏幕，则尝试向上展开
+    if (top + adjustedHeight > windowHeight) {
+      // 计算向上展开的顶部位置
+      top = windowHeight - adjustedHeight;
+      // 确保顶部位置不小于0
+      if (top < 0) {
+        top = 0;
+        adjustedHeight = windowHeight; // 调整高度以适应窗口
+      }
+    }
+
+    return { top, height: adjustedHeight };
+  };
   render() {
     // Don't want to pass faulty rest props to the div
     const { multi, values, highlightIndex, selectedValues, onToggle, onToggleAll, theme, ...restProps } = this.props;
     const styles = getStyles(theme);
-
+    const wrapperStyles = {};
+    if (this.state.top && this.props.fixedPosition?.top) {
+      wrapperStyles['top'] = this.state.top + 'px';
+      wrapperStyles['height'] = this.state.height + 'px';
+    }
     return (
-      <div className={styles.variableValueDropdown}>
+      <div
+        className={styles.variableValueDropdown}
+        style={{
+          position: this.props.fixedPosition ? 'fixed' : 'absolute',
+          ...wrapperStyles,
+          // top: this.props.fixedPosition?.top
+          //   ? this.props.fixedPosition.top + 32 + 'px'
+          //   : theme.spacing(theme.components.height.md),
+        }}
+        ref={(instance) => {
+          if (!this.state.top && instance && this.props.fixedPosition?.top) {
+            const rect = instance.getBoundingClientRect();
+            const { top, height } = this.getBestDomPosition(this.props.fixedPosition.top + 32, 480, rect.height);
+            this.setState({ top, height });
+          }
+        }}
+      >
         <div className={styles.variableOptionsWrapper}>
           <ul
             className={styles.variableOptionsColumn}
@@ -90,7 +157,10 @@ class VariableOptions extends PureComponent<Props> {
               [styles.hideVariableOptionIcon]: !multi,
             })}
           ></span>
-          <span style={{userSelect: 'text'}} data-testid={selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownOptionTexts(`${option.text}`)}>
+          <span
+            style={{ userSelect: 'text' }}
+            data-testid={selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownOptionTexts(`${option.text}`)}
+          >
             {isAllOption ? t('variable.picker.option-all', 'All') : option.text}
           </span>
         </button>

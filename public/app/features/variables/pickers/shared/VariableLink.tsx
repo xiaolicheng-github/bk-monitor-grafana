@@ -13,7 +13,7 @@ interface Props {
   onClick: () => void;
   text: string;
   loading: boolean;
-  onCancel: () => void;
+  onCancel?: () => void;
   disabled?: boolean;
   /**
    *  htmlFor, needed for the label
@@ -41,7 +41,7 @@ export const VariableLink = ({ loading, disabled, onClick: propsOnClick, text, o
         id={id}
       >
         <VariableLinkText text={text} />
-        <LoadingIndicator loading onCancel={onCancel} />
+        <LoadingIndicator loading onCancel={onCancel!} />
       </div>
     );
   }
@@ -78,7 +78,7 @@ const VariableLinkText = ({ text }: VariableLinkTextProps) => {
 
 const getStyles = (theme: GrafanaTheme2) => ({
   container: css`
-    max-width: 500px;
+    max-width: 480px;
     padding-right: 10px;
     padding: 0 ${theme.spacing(1)};
     background-color: ${theme.components.input.background};

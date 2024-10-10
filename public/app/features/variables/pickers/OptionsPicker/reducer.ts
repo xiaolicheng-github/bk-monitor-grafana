@@ -43,7 +43,7 @@ const ufuzzy = new uFuzzy({
   intraDel: 1,
 });
 
-const optionsToRecord = (options: VariableOption[]): Record<string, VariableOption> => {
+export const optionsToRecord = (options: VariableOption[]): Record<string, VariableOption> => {
   if (!Array.isArray(options)) {
     return {};
   }
@@ -56,7 +56,7 @@ const optionsToRecord = (options: VariableOption[]): Record<string, VariableOpti
   }, {});
 };
 
-const updateOptions = (state: OptionsPickerState): OptionsPickerState => {
+export const updateOptions = (state: OptionsPickerState): OptionsPickerState => {
   if (!Array.isArray(state.options)) {
     state.options = [];
     return state;
@@ -82,7 +82,7 @@ const updateOptions = (state: OptionsPickerState): OptionsPickerState => {
   return state;
 };
 
-const applyLimit = (options: VariableOption[]): VariableOption[] => {
+export const applyLimit = (options: VariableOption[]): VariableOption[] => {
   if (!Array.isArray(options)) {
     return [];
   }
@@ -92,7 +92,7 @@ const applyLimit = (options: VariableOption[]): VariableOption[] => {
   return options.slice(0, OPTIONS_LIMIT);
 };
 
-const updateDefaultSelection = (state: OptionsPickerState): OptionsPickerState => {
+export const updateDefaultSelection = (state: OptionsPickerState): OptionsPickerState => {
   const { options, selectedValues } = state;
 
   if (options.length === 0 || selectedValues.length > 0) {
@@ -107,7 +107,7 @@ const updateDefaultSelection = (state: OptionsPickerState): OptionsPickerState =
   return state;
 };
 
-const updateAllSelection = (state: OptionsPickerState): OptionsPickerState => {
+export const updateAllSelection = (state: OptionsPickerState): OptionsPickerState => {
   const { selectedValues } = state;
   if (selectedValues.length > 1) {
     state.selectedValues = selectedValues.filter((option) => option.value !== ALL_VARIABLE_VALUE);
@@ -116,7 +116,7 @@ const updateAllSelection = (state: OptionsPickerState): OptionsPickerState => {
 };
 
 // Utility function to select all options except 'ALL_VARIABLE_VALUE'
-const selectAllOptions = (options: VariableOption[]) =>
+export const selectAllOptions = (options: VariableOption[]) =>
   options
     .filter((option) => option.value !== ALL_VARIABLE_VALUE)
     .map((option) => ({
@@ -260,22 +260,24 @@ const optionsPickerSlice = createSlice({
         const [idxs, info, order] = ufuzzy.search(haystack, needle, 5);
 
         // if (idxs?.length) {
-          if (info && order) {
-            opts = order.map((idx) => action.payload[info.idx[idx]]);
-          } else if (idxs?.length){
-            opts = idxs?.map((idx) => action.payload[idx]);
-          }else {
-            // 处理中文搜索
-            opts = haystack.map((text, index) => {
-              if(text.toLowerCase().includes(needle.toLowerCase())) {
+        if (info && order) {
+          opts = order.map((idx) => action.payload[info.idx[idx]]);
+        } else if (idxs?.length) {
+          opts = idxs?.map((idx) => action.payload[idx]);
+        } else {
+          // 处理中文搜索
+          opts = haystack
+            .map((text, index) => {
+              if (text.toLowerCase().includes(needle.toLowerCase())) {
                 return action.payload[index];
               }
-              return undefined
-            }).filter(Boolean) as VariableOption[];
-          }
+              return undefined;
+            })
+            .filter(Boolean) as VariableOption[];
+        }
 
-          // always sort $__all to the top, even if exact match exists?
-          opts.sort((a, b) => (a.value === ALL_VARIABLE_VALUE ? -1 : 0) - (b.value === ALL_VARIABLE_VALUE ? -1 : 0));
+        // always sort $__all to the top, even if exact match exists?
+        opts.sort((a, b) => (a.value === ALL_VARIABLE_VALUE ? -1 : 0) - (b.value === ALL_VARIABLE_VALUE ? -1 : 0));
         // }
       }
 
