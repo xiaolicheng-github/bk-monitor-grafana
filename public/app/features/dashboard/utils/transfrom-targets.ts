@@ -309,8 +309,7 @@ export const buildUrlParams = (targetList: any[], needReplaceVariable = true): P
             ...func,
             params: func.params?.map((set) => ({
               ...set,
-              value:
-                needReplaceVariable && typeof set.value === 'string' ? getTemplateSrv().replace(set.value) : set.value,
+              value: typeof set.value === 'string' ? getTemplateSrv().replace(set.value) : set.value,
             })),
           })) || [];
       config.interval = replaceInterval(config.interval, config.interval_unit);
@@ -337,7 +336,7 @@ export const buildUrlParams = (targetList: any[], needReplaceVariable = true): P
       ];
     }
     if (data.source?.length) {
-      data.source = needReplaceVariable ? buildPromqlVariables(data.source) : data.source;
+      data.source = buildPromqlVariables(data.source);
     }
     const { alias, display, expression, ...props } = data;
     dataList.push(props);

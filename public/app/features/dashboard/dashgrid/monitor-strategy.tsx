@@ -1,6 +1,6 @@
 /* eslint-disable @grafana/no-border-radius-literal */
 import { css, cx } from '@emotion/css';
-import React, { ReactElement, useState } from 'react';
+import React, { ReactElement, useMemo, useState } from 'react';
 
 import { GrafanaTheme2, VariableWithMultiSupport, VariableWithOptions } from '@grafana/data';
 import { Button, Modal, useStyles2, Input, Tooltip } from '@grafana/ui';
@@ -57,7 +57,15 @@ export const MonitorStrategy = ({ panel, dashboard, isOpen, onHideModal, monitor
         }
   );
   console.info('MonitorStrategy', realTarget, '==================================');
-  const targetStr = JSON.stringify(realTarget);
+  const targetStr = JSON.stringify(
+    monitorTarget?.mode === 'code'
+      ? realTarget
+      : {
+          query_configs: realTarget.query_configs?.map((item) => ({
+            where: item.where,
+          })),
+        }
+  );
   const variablesSet = new Set<string>();
   const stateMap = {} as Record<string, MonitorVariableState>;
   if (targetStr?.length) {
@@ -85,11 +93,26 @@ export const MonitorStrategy = ({ panel, dashboard, isOpen, onHideModal, monitor
           multi: !!(variable as VariableWithMultiSupport).multi,
           showOption: false,
         };
+        stateMap[variableName] = state;
       }
-      stateMap[variableName] = state;
     }
   }
   const [variableStateMap, updateVariableStateMap] = useState<Record<string, MonitorVariableState>>(stateMap);
+  const needDisabled = useMemo(() => {
+    // if (variablesSet.size && !Object.values(variableStateMap || {}).length) {
+    //   return true;
+    // }
+    let disabled = false;
+    for (const variable of Object.values(variableStateMap)) {
+      if (variable.options.length && !variable.selectedValues.length) {
+        disabled = true;
+      } else if (!variable.options.length && !variable.queryValue) {
+        disabled = true;
+      }
+    }
+    console.info('needDisabled', disabled, variableStateMap);
+    return disabled;
+  }, [variableStateMap]);
   const createCommonField = (label: string, value: string | ReactElement[]) => {
     return (
       <div className={styles.commonField}>
@@ -127,7 +150,11 @@ export const MonitorStrategy = ({ panel, dashboard, isOpen, onHideModal, monitor
                 key={i}
                 className={styles.valueItem}
                 style={{
-                  background: v?.startsWith('$') ? '#FFDEDE' : 'transparent',
+                  background: Object.values(variableStateMap).find(
+                    (item) => item.id && item.id.toString() === v.toString().slice(1)
+                  )
+                    ? '#FFDEDE'
+                    : 'transparent',
                 }}
               >
                 {v === '' ? '-空-' : v}
@@ -172,6 +199,7 @@ export const MonitorStrategy = ({ panel, dashboard, isOpen, onHideModal, monitor
           onChange={(e) => {
             handleUpdateVariableStateMap(name, {
               ...variableState,
+              // @ts-ignore
               queryValue: e.target?.value || '',
             });
           }}
@@ -329,7 +357,7 @@ export const MonitorStrategy = ({ panel, dashboard, isOpen, onHideModal, monitor
       </div>
       <div className={styles.footer}>
         <Modal.ButtonRow>
-          <Button onClick={() => onAddStrategy()} disabled>
+          <Button onClick={() => onAddStrategy()} disabled={needDisabled}>
             确定
           </Button>
           <Button variant="secondary" fill="outline" onClick={() => onHideModal()}>
