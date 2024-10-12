@@ -1,9 +1,9 @@
 /* eslint-disable @grafana/no-border-radius-literal */
-import { css } from '@emotion/css';
+import { css, cx } from '@emotion/css';
 import React, { ReactElement, useState } from 'react';
 
 import { GrafanaTheme2, VariableWithMultiSupport, VariableWithOptions } from '@grafana/data';
-import { Button, Modal, useStyles2, Input } from '@grafana/ui';
+import { Button, Modal, useStyles2, Input, Tooltip } from '@grafana/ui';
 import { OptionsPickerState, initialOptionPickerState } from 'app/features/variables/pickers/OptionsPicker/reducer';
 import { getVariableWithName } from 'app/features/variables/state/selectors';
 
@@ -36,7 +36,7 @@ const MethodMap = {
 
 export const MonitorStrategy = ({ panel, dashboard, isOpen, onHideModal, monitorTarget }: Props) => {
   const styles = useStyles2(getStyles);
-  const realTarget =
+  const [realTarget, updateRealTarget] = useState(
     monitorTarget?.mode === 'code'
       ? {
           source: monitorTarget?.source,
@@ -54,7 +54,8 @@ export const MonitorStrategy = ({ panel, dashboard, isOpen, onHideModal, monitor
               ...item,
               alias: '',
             })),
-        };
+        }
+  );
   console.info('MonitorStrategy', realTarget, '==================================');
   const targetStr = JSON.stringify(realTarget);
   const variablesSet = new Set<string>();
@@ -145,7 +146,7 @@ export const MonitorStrategy = ({ panel, dashboard, isOpen, onHideModal, monitor
       return (
         <div className={styles.functionWrap} key={index}>
           <span>{item.id}</span>
-          {item.params?.length && <span>({item.params.map((v) => v.value).join(',')})</span>}
+          {item.params?.length ? <span>({item.params.map((v) => v.value).join(',')})</span> : undefined}
         </div>
       );
     });
@@ -188,6 +189,19 @@ export const MonitorStrategy = ({ panel, dashboard, isOpen, onHideModal, monitor
   const onAddStrategy = () => {
     onHideModal();
   };
+  const deleteExpression = (index: number) => {
+    realTarget.expressionList?.splice(index, 1);
+    updateRealTarget({
+      ...realTarget,
+      expressionList: realTarget.expressionList,
+    } as any);
+  };
+  const onDeleteVariable = (name: string) => {
+    delete variableStateMap[name];
+    updateVariableStateMap({
+      ...variableStateMap,
+    });
+  };
   if (!panel || !dashboard) {
     return null;
   }
@@ -195,7 +209,7 @@ export const MonitorStrategy = ({ panel, dashboard, isOpen, onHideModal, monitor
     return undefined;
   }
   return (
-    <Modal title="添加策略" isOpen={isOpen} onDismiss={() => onHideModal()}>
+    <Modal title="添加策略" isOpen={isOpen} onDismiss={() => onHideModal()} closeOnEscape>
       <div className={styles.targetWrapper}>
         {monitorTarget.mode === 'code' ? (
           <>
@@ -234,6 +248,55 @@ export const MonitorStrategy = ({ panel, dashboard, isOpen, onHideModal, monitor
             })}
           </>
         )}
+        {realTarget.expressionList?.map((target, index) => (
+          <div className={styles.target} key={index}>
+            <span className={styles.targetRefId}>
+              <svg width="20" height="20" className={styles.svgIcon} viewBox="0 0 1024 1024">
+                <path d="M128 64v512a128 128 0 0 0 118.442667 127.658667L256 704h448v-128L1024 768l-320 192v-128H256A256 256 0 0 1 0.341333 588.8L0 576v-512h128z"></path>
+              </svg>
+            </span>
+            <div className={styles.expressionContent}>
+              {createCommonField('表达式', target.expression)}
+              {createCommonField('函数', createFunctions(target.functions))}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className={cx(styles.svgIcon, styles.deleteIcon)}
+                onClick={() => deleteExpression(index)}
+                overflow="hidden"
+                width="20"
+                height="20"
+                viewBox="0 0 1024 1024"
+              >
+                <path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zM670.4 625.1l-45.3 45.3L512 557.3 398.9 670.4l-45.3-45.3L466.7 512 353.6 398.9l45.3-45.3L512 466.7l113.1-113.1 45.3 45.3L557.3 512 670.4 625.1z"></path>
+              </svg>
+            </div>
+          </div>
+        ))}
+        {realTarget.expressionList?.length && realTarget.expressionList.length > 1 && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              height: '20px',
+              color: '#EA3636',
+              fontSize: '12px',
+            }}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 1024 1024"
+              className={styles.svgIcon}
+              width="20"
+              height="20"
+              style={{
+                marginRight: '4px',
+              }}
+            >
+              <path d="M512 64C264 64 64 264 64 512s200 448 448 448 448-200 448-448S760 64 512 64zM512 768c-27.2 0-48-20.8-48-48s20.8-48 48-48c27.2 0 48 20.8 48 48S539.2 768 512 768zM560 308.8L544 608c0 17.6-14.4 32-32 32-17.6 0-32-14.4-32-32l-16-299.2c0-1.6 0-3.2 0-4.8 0-27.2 20.8-48 48-48 27.2 0 48 20.8 48 48C560 305.6 560 307.2 560 308.8z"></path>
+            </svg>
+            配置告警策略仅支持单表达式
+          </div>
+        )}
         {Object.keys(variableStateMap).length > 0 && (
           <div className={styles.targetWrapper}>
             <div className={styles.variableTitle}>
@@ -245,6 +308,19 @@ export const MonitorStrategy = ({ panel, dashboard, isOpen, onHideModal, monitor
                 <div className={styles.variableRow} key={name}>
                   <span className={styles.variableRowLabel}>${name}</span>
                   <span className={styles.variableRowContent}>{createVariableSelect(name)}</span>
+                  <Tooltip placement="top" content={'去掉该变量后，对应的条件不生效'} theme="error">
+                    <svg
+                      className={cx(styles.svgIcon, styles.deleteVariableIcon)}
+                      viewBox="0 0 1024 1024"
+                      width={14}
+                      height={14}
+                      version="1.1"
+                      xmlns="http://www.w3.org/2000/svg"
+                      onClick={() => onDeleteVariable(name)}
+                    >
+                      <path d="M512 64C264 64 64 264 64 512s200 448 448 448 448-200 448-448S760 64 512 64z m224 480H288v-64h448v64z"></path>
+                    </svg>
+                  </Tooltip>
                 </div>
               );
             })}
@@ -253,10 +329,12 @@ export const MonitorStrategy = ({ panel, dashboard, isOpen, onHideModal, monitor
       </div>
       <div className={styles.footer}>
         <Modal.ButtonRow>
-          <Button variant="secondary" fill="outline" onClick={() => onHideModal()}>
-            Cancel
+          <Button onClick={() => onAddStrategy()} disabled>
+            确定
           </Button>
-          <Button onClick={() => onAddStrategy()}>Save</Button>
+          <Button variant="secondary" fill="outline" onClick={() => onHideModal()}>
+            取消
+          </Button>
         </Modal.ButtonRow>
       </div>
     </Modal>
@@ -398,7 +476,17 @@ const getStyles = (theme: GrafanaTheme2) => {
       display: flex;
       width: 100%;
       align-items: center;
-      width: 208px;
+      width: fit-content;
+      .monitor-variable-container {
+        max-width: 408px;
+      }
+      .monitor-variable-text {
+        min-width: 174px;
+        text-align: left;
+      }
+      .gf-form-input {
+        min-width: 208px;
+      }
     `,
     footer: css`
       position: sticky;
@@ -411,6 +499,48 @@ const getStyles = (theme: GrafanaTheme2) => {
       display: flex;
       align-items: center;
       margin-right: 8px;
+    `,
+    svgIcon: css`
+      width: 1em;
+      height: 1em;
+      margin: 0px 4px;
+      overflow: hidden;
+      vertical-align: middle;
+      fill: currentcolor;
+    `,
+    expressionContent: css`
+      flex: 1 1 auto;
+      display: flex;
+      align-items: center;
+      padding: 12px 0 4px 12px;
+      background: #f5f7fa;
+      flex-wrap: wrap;
+      word-break: break-all;
+      position: relative;
+      :hover {
+        background: #f0f1f5;
+        cursor: pointer;
+      }
+      :hover svg {
+        display: flex;
+      }
+    `,
+    deleteIcon: css`
+      color: #c4c6cc;
+      font-size: 16px;
+      margin-left: auto;
+      margin-right: 12px;
+      margin-top: -4px;
+      display: none;
+    `,
+    deleteVariableIcon: css`
+      color: #c4c6cc;
+      font-size: 16px;
+      margin-left: 12px;
+      :hover {
+        cursor: pointer;
+        color: #ea3636;
+      }
     `,
   };
 };

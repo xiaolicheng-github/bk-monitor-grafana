@@ -1,4 +1,4 @@
-import { css } from '@emotion/css';
+import { css, cx } from '@emotion/css';
 import React, { MouseEvent, useCallback } from 'react';
 
 import { GrafanaTheme2 } from '@grafana/data';
@@ -35,7 +35,7 @@ export const VariableLink = ({ loading, disabled, onClick: propsOnClick, text, o
   if (loading) {
     return (
       <div
-        className={styles.container}
+        className={cx(styles.container, 'monitor-variable-container')}
         data-testid={selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownValueLinkTexts(`${text}`)}
         title={text}
         id={id}
@@ -49,7 +49,7 @@ export const VariableLink = ({ loading, disabled, onClick: propsOnClick, text, o
   return (
     <button
       onClick={onClick}
-      className={styles.container}
+      className={cx(styles.container, 'monitor-variable-container')}
       data-testid={selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownValueLinkTexts(`${text}`)}
       aria-expanded={false}
       aria-controls={`options-${id}`}
@@ -70,7 +70,7 @@ interface VariableLinkTextProps {
 const VariableLinkText = ({ text }: VariableLinkTextProps) => {
   const styles = useStyles2(getStyles);
   return (
-    <span className={styles.textAndTags}>
+    <span className={cx(styles.textAndTags, 'monitor-variable-text')}>
       {text === ALL_VARIABLE_TEXT ? t('variable.picker.link-all', 'All') : text}
     </span>
   );
