@@ -20,10 +20,10 @@ COPY .yarn .yarn
 COPY packages packages
 COPY plugins-bundled plugins-bundled
 COPY public public
+
 RUN apk add --no-cache py3-setuptools
 RUN apk add --no-cache make build-base python3
-RUN python3 --version || true
-RUN yarn install --immutable --inline-builds || true
+RUN yarn install --immutable --inline-builds
 
 COPY tsconfig.json .eslintrc .editorconfig .browserslistrc .prettierrc.js ./
 COPY public public
