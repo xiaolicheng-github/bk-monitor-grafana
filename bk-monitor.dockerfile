@@ -23,7 +23,7 @@ COPY public public
 
 RUN apk add --no-cache make build-base python3
 
-RUN yarn install --immutable || true
+RUN yarn install --immutable --inline-builds || true
 
 COPY tsconfig.json .eslintrc .editorconfig .browserslistrc .prettierrc.js ./
 COPY public public
