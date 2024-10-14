@@ -147,7 +147,7 @@ function ShareLinkTabRenderer({ model }: SceneComponentProps<ShareLinkTab>) {
   const timeRange = sceneGraph.getTimeRange(panel ?? dashboard);
   const isRelativeTime = timeRange.state.to === 'now' ? true : false;
 
-  const { useLockedTime, useShortUrl, selectedTheme, shareUrl, imageUrl } = state;
+  const { useLockedTime, selectedTheme, shareUrl, imageUrl } = state;
 
   const selectors = e2eSelectors.pages.SharePanelModal;
   const isDashboardSaved = Boolean(dashboard.state.uid);
@@ -159,7 +159,7 @@ function ShareLinkTabRenderer({ model }: SceneComponentProps<ShareLinkTab>) {
     `Transforms the current relative time range to an absolute time range`
   );
 
-  const shortenURLTranslation = t('share-modal.link.shorten-url', `Shorten URL`);
+  // const shortenURLTranslation = t('share-modal.link.shorten-url', `Shorten URL`);
 
   const linkURLTranslation = t('share-modal.link.link-url', `Link URL`);
 
@@ -175,9 +175,9 @@ function ShareLinkTabRenderer({ model }: SceneComponentProps<ShareLinkTab>) {
           <Switch id="share-current-time-range" value={useLockedTime} onChange={model.onToggleLockedTime} />
         </Field>
         <ThemePicker selectedTheme={selectedTheme} onChange={model.onThemeChange} />
-        <Field label={shortenURLTranslation}>
+        {/* <Field label={shortenURLTranslation}>
           <Switch id="share-shorten-url" value={useShortUrl} onChange={model.onUrlShorten} />
-        </Field>
+        </Field> */}
 
         <Field label={linkURLTranslation}>
           <Input
@@ -214,7 +214,7 @@ function ShareLinkTabRenderer({ model }: SceneComponentProps<ShareLinkTab>) {
           )}
         </>
       )}
-
+      {/*
       {panel && !config.rendererAvailable && (
         <Alert
           severity="info"
@@ -234,7 +234,7 @@ function ShareLinkTabRenderer({ model }: SceneComponentProps<ShareLinkTab>) {
             . Please contact your Grafana administrator to install the plugin.
           </Trans>
         </Alert>
-      )}
+      )} */}
     </>
   );
 }

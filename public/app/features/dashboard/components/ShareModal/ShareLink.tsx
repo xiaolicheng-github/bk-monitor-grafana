@@ -116,9 +116,9 @@ export class ShareLink extends PureComponent<Props, State> {
             />
           </Field>
           <ThemePicker selectedTheme={selectedTheme} onChange={this.onThemeChange} />
-          <Field label={shortenURLTranslation}>
+          {/* <Field label={shortenURLTranslation}>
             <Switch id="share-shorten-url" value={useShortUrl} onChange={this.onUrlShorten} />
-          </Field>
+          </Field> */}
 
           <Field label={linkURLTranslation}>
             <Input
@@ -155,7 +155,7 @@ export class ShareLink extends PureComponent<Props, State> {
             )}
           </>
         )}
-
+        {/*
         {panel && !config.rendererAvailable && (
           <Alert
             severity="info"
@@ -170,7 +170,7 @@ export class ShareLink extends PureComponent<Props, State> {
               . Please contact your Grafana administrator to install the plugin.
             </Trans>
           </Alert>
-        )}
+        )} */}
       </>
     );
   }

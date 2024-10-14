@@ -10,12 +10,12 @@ import { AppChromeUpdate } from 'app/core/components/AppChrome/AppChromeUpdate';
 import { Page } from 'app/core/components/Page/Page';
 import { t } from 'app/core/internationalization';
 import { contextSrv } from 'app/core/services/context_srv';
-import { AccessControlAction } from 'app/types';
+// import { AccessControlAction } from 'app/types';
 import { DashboardMetaChangedEvent } from 'app/types/events';
 
 import { VariableEditorContainer } from '../../../variables/editor/VariableEditorContainer';
 import { DashboardModel } from '../../state/DashboardModel';
-import { AccessControlDashboardPermissions } from '../DashboardPermissions/AccessControlDashboardPermissions';
+// import { AccessControlDashboardPermissions } from '../DashboardPermissions/AccessControlDashboardPermissions';
 import { SaveDashboardAsButton, SaveDashboardButton } from '../SaveDashboard/SaveDashboardButton';
 
 import { AnnotationsSettings } from './AnnotationsSettings';
@@ -143,18 +143,18 @@ function getSettingsPages(dashboard: DashboardModel) {
     });
   }
 
-  const permissionsTitle = t('dashboard-settings.permissions.title', 'Permissions');
+  // const permissionsTitle = t('dashboard-settings.permissions.title', 'Permissions');
 
-  if (dashboard.id && dashboard.meta.canAdmin) {
-    if (contextSrv.hasPermission(AccessControlAction.DashboardsPermissionsRead)) {
-      pages.push({
-        title: permissionsTitle,
-        id: 'permissions',
-        icon: 'lock',
-        component: AccessControlDashboardPermissions,
-      });
-    }
-  }
+  // if (dashboard.id && dashboard.meta.canAdmin) {
+  //   if (contextSrv.hasPermission(AccessControlAction.DashboardsPermissionsRead)) {
+  //     pages.push({
+  //       title: permissionsTitle,
+  //       id: 'permissions',
+  //       icon: 'lock',
+  //       component: AccessControlDashboardPermissions,
+  //     });
+  //   }
+  // }
 
   pages.push({
     title: t('dashboard-settings.json-editor.title', 'JSON Model'),
