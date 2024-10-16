@@ -51,6 +51,8 @@ export interface MenuItemProps<T = unknown> {
   shortcut?: string;
   /** Test id for e2e tests and fullstory*/
   testId?: string;
+  /** Children */
+  children?: React.ReactNode;
 }
 
 /** @internal */
@@ -75,6 +77,7 @@ export const MenuItem = React.memo(
       customSubMenuContainerStyles,
       shortcut,
       testId,
+      children,
     } = props;
     const styles = useStyles2(getStyles);
     const [isActive, setIsActive] = useState(active);
@@ -195,6 +198,7 @@ export const MenuItem = React.memo(
             {description}
           </div>
         )}
+        {children}
       </ItemElement>
     );
   })

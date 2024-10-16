@@ -20,6 +20,7 @@ export interface QueryData {
   source?: string; // 数据源
   expressionList?: ExpressionItem[]; // 表达式项数组
   mode: string; // 查询模式
+  step?: string | number;
 }
 export interface ExpressionItem {
   expression: string;

@@ -2,7 +2,7 @@ import React from 'react';
 
 import { PanelMenuItem } from '@grafana/data';
 import { selectors } from '@grafana/e2e-selectors';
-import { Menu } from '@grafana/ui';
+import { Menu, Spinner } from '@grafana/ui';
 
 import { QueryData } from '../../utils/transfrom-targets';
 export interface Props {
@@ -30,6 +30,31 @@ export function PanelHeaderMenu({ items, onClickAddStrategy }: Props) {
             <Menu.Group key={item.text} label={item.text}>
               {item.subMenu ? renderItems(item.subMenu) : undefined}
             </Menu.Group>
+          );
+        case 'loading':
+          return (
+            <Menu.Item
+              key={item.text}
+              label={item.text}
+              icon={item.iconClassName}
+              childItems={item.subMenu ? renderItems(item.subMenu) : undefined}
+              url={item.href}
+              onClick={(e, payload) => handleItemClick(item, e, payload)}
+              shortcut={item.shortcut}
+              testId={selectors.components.Panels.Panel.menuItems(item.text)}
+            >
+              {
+                <Spinner
+                  style={{
+                    display: 'inline-flex',
+                    position: 'absolute',
+                    top: '6px',
+                    right: '15px',
+                    color: '#3a84ff',
+                  }}
+                />
+              }
+            </Menu.Item>
           );
         default:
           return (

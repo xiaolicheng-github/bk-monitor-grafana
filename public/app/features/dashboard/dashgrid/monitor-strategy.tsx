@@ -2,13 +2,15 @@
 import { css, cx } from '@emotion/css';
 import React, { ReactElement, useMemo, useState } from 'react';
 
-import { GrafanaTheme2, VariableWithMultiSupport, VariableWithOptions } from '@grafana/data';
-import { Button, Modal, useStyles2, Input, Tooltip } from '@grafana/ui';
+import { GrafanaTheme2, ScopedVars, VariableWithMultiSupport, VariableWithOptions } from '@grafana/data';
+import { VariableInterpolation, getDataSourceSrv } from '@grafana/runtime';
+import { Button, Modal, useStyles2, Input, Tooltip, Spinner } from '@grafana/ui';
+import { getTemplateSrv } from 'app/features/templating/template_srv';
 import { OptionsPickerState, initialOptionPickerState } from 'app/features/variables/pickers/OptionsPicker/reducer';
 import { getVariableWithName } from 'app/features/variables/state/selectors';
 
 import { DashboardModel, PanelModel } from '../state';
-import { QueryConfig, QueryData } from '../utils/transfrom-targets';
+import { QueryConfig, QueryData, getMetricId } from '../utils/transfrom-targets';
 
 import MonitorVariablePicker from './monitor-variable';
 export interface MonitorVariableState extends OptionsPickerState {
@@ -33,7 +35,7 @@ const MethodMap = {
   reg: 'regex',
   nreg: 'nregex',
 } as any;
-
+const variableRegex = /\$(\w+)|\[\[(\w+?)(?::(\w+))?\]\]|\${(\w+)(?:\.([^:^\}]+))?(?::([^\}]+))?}/g;
 export const MonitorStrategy = ({ panel, dashboard, isOpen, onHideModal, monitorTarget }: Props) => {
   const styles = useStyles2(getStyles);
   const [realTarget, updateRealTarget] = useState(
@@ -56,7 +58,7 @@ export const MonitorStrategy = ({ panel, dashboard, isOpen, onHideModal, monitor
             })),
         }
   );
-  console.info('MonitorStrategy', realTarget, '==================================');
+  const [loading, setLoading] = useState(false);
   const targetStr = JSON.stringify(
     monitorTarget?.mode === 'code'
       ? realTarget
@@ -66,10 +68,10 @@ export const MonitorStrategy = ({ panel, dashboard, isOpen, onHideModal, monitor
           })),
         }
   );
+
   const variablesSet = new Set<string>();
   const stateMap = {} as Record<string, MonitorVariableState>;
   if (targetStr?.length) {
-    const variableRegex = /\$(\w+)|\[\[(\w+?)(?::(\w+))?\]\]|\${(\w+)(?:\.([^:^\}]+))?(?::([^\}]+))?}/g;
     variableRegex.lastIndex = 0;
     // @ts-ignore
     targetStr.replace(variableRegex, (match, var1, var2, fmt2, var3) => {
@@ -98,6 +100,7 @@ export const MonitorStrategy = ({ panel, dashboard, isOpen, onHideModal, monitor
     }
   }
   const [variableStateMap, updateVariableStateMap] = useState<Record<string, MonitorVariableState>>(stateMap);
+  console.info('MonitorStrategy', panel, dashboard, '==================================');
   const needDisabled = useMemo(() => {
     // if (variablesSet.size && !Object.values(variableStateMap || {}).length) {
     //   return true;
@@ -214,7 +217,113 @@ export const MonitorStrategy = ({ panel, dashboard, isOpen, onHideModal, monitor
       />
     );
   };
-  const onAddStrategy = () => {
+  const onAddStrategy = async () => {
+    const datasource: any = await getDataSourceSrv().get(panel?.datasource);
+    if (!datasource?.addRelateStrategy) {
+      onHideModal();
+      return;
+    }
+    const targetVariableMap: Record<string, any> = {};
+    let scopedVars: ScopedVars = {};
+    for (const [name, variable] of Object.entries(variableStateMap)) {
+      if (variable.selectedValues?.length) {
+        scopedVars = {
+          [name]: {
+            text: variable.selectedValues.map((v) => v.text),
+            value: variable.selectedValues.map((v) => v.value),
+          },
+        };
+      } else {
+        scopedVars = {
+          [name]: {
+            text: variable.queryValue,
+            value: variable.queryValue,
+          },
+        };
+      }
+    }
+    const matchList = targetStr.match(variableRegex) || [];
+    const interpolations: VariableInterpolation[] = [];
+    for (const regStr of matchList) {
+      getTemplateSrv().replace(regStr, scopedVars, undefined, interpolations);
+    }
+    for (const item of interpolations) {
+      if (!item.found) {
+        continue;
+      }
+      let value = [];
+      if (item.format) {
+        value = [item.value];
+      } else {
+        const variable = variableStateMap[item.variableName];
+        if (variable?.selectedValues?.length) {
+          value = variable.selectedValues.map((v) => v.value);
+        } else {
+          value = [item.value];
+        }
+      }
+      targetVariableMap[item.match] = value;
+    }
+    const strategyParams: Record<string, any> = {
+      variable_map: targetVariableMap,
+      panel_id: panel?.id,
+      dashboard_id: dashboard?.uid,
+      refId: monitorTarget.refId,
+    };
+    if (monitorTarget.mode === 'code') {
+      strategyParams.items = [
+        {
+          expression: 'a',
+          functions: [],
+          origin_sql: monitorTarget.source,
+          query_configs: [
+            {
+              agg_interval: monitorTarget.step || 60,
+              alias: 'a',
+              data_source_label: 'prometheus',
+              data_type_label: 'time_series',
+              promql: monitorTarget.source,
+            },
+          ],
+        },
+      ];
+    } else {
+      const expression = realTarget?.expressionList?.[0];
+      strategyParams.items = [
+        {
+          expression: expression?.expression || 'a',
+          functions: expression?.functions || [],
+          origin_sql: '',
+          query_configs: realTarget.query_configs?.map((item) => {
+            return {
+              agg_condition: item.where,
+              agg_dimension: item.group_by,
+              agg_interval: item.interval,
+              alias: item.alias,
+              agg_method: item.method,
+              data_source_label: item.data_source_label,
+              data_type_label: item.data_type_label,
+              functions: item.functions,
+              index_set_id: item.index_set_id,
+              metric_field: item.metric_field,
+              metric_id: getMetricId(
+                item.data_source_label,
+                item.data_type_label,
+                item.metric_field,
+                item.data_label || item.result_table_id,
+                item.index_set_id
+              ),
+              query_string: item.query_string,
+              result_table_id: item.result_table_id,
+              unit: item.interval_unit,
+            };
+          }),
+        },
+      ];
+    }
+    setLoading(true);
+    const data = await datasource.addRelateStrategy(strategyParams);
+    setLoading(false);
     onHideModal();
   };
   const deleteExpression = (index: number) => {
@@ -300,7 +409,7 @@ export const MonitorStrategy = ({ panel, dashboard, isOpen, onHideModal, monitor
             </div>
           </div>
         ))}
-        {realTarget.expressionList?.length && realTarget.expressionList.length > 1 && (
+        {realTarget.expressionList?.length && realTarget.expressionList.length > 1 ? (
           <div
             style={{
               display: 'flex',
@@ -324,7 +433,7 @@ export const MonitorStrategy = ({ panel, dashboard, isOpen, onHideModal, monitor
             </svg>
             配置告警策略仅支持单表达式
           </div>
-        )}
+        ) : undefined}
         {Object.keys(variableStateMap).length > 0 && (
           <div className={styles.targetWrapper}>
             <div className={styles.variableTitle}>
@@ -357,8 +466,8 @@ export const MonitorStrategy = ({ panel, dashboard, isOpen, onHideModal, monitor
       </div>
       <div className={styles.footer}>
         <Modal.ButtonRow>
-          <Button onClick={() => onAddStrategy()} disabled={needDisabled}>
-            确定
+          <Button onClick={() => onAddStrategy()} disabled={needDisabled || loading}>
+            {loading ? <Spinner /> : '确定'}
           </Button>
           <Button variant="secondary" fill="outline" onClick={() => onHideModal()}>
             取消

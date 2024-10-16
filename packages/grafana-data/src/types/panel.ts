@@ -166,7 +166,7 @@ export interface PanelOptionsEditorConfig<TOptions, TSettings = any, TValue = an
  * @internal
  */
 export interface PanelMenuItem {
-  type?: 'submenu' | 'divider' | 'group';
+  type?: 'submenu' | 'divider' | 'group' | 'loading';
   text: string;
   iconClassName?: IconName;
   onClick?: (event: React.MouseEvent<any>) => void;

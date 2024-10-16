@@ -264,12 +264,6 @@ export function getPanelMenu(
               return onAddStrategy(target);
             },
           });
-          relateStrategySubMenu.push({
-            text: 'Query ' + (target.refId || target.source),
-            onClick: () => {
-              return target;
-            },
-          });
           dataRetrievalSubMenu.push({
             text: 'Query ' + (target.refId || target.source),
             onClick: (event: React.MouseEvent<any>) => {
@@ -309,12 +303,13 @@ export function getPanelMenu(
           iconClassName: 'heart-break',
           ...(alertSubMenu.length > 1 ? { subMenu: alertSubMenu } : { onClick: alertSubMenu[0].onClick }),
         });
-      menu.push({
-        type: 'submenu',
-        text: !isEnLang ? '关联策略' : 'Relate Rule',
-        iconClassName: 'heart',
-        subMenu: relateStrategySubMenu,
-      });
+      strategySubMenu.length &&
+        menu.push({
+          type: 'loading',
+          text: !isEnLang ? '关联策略' : 'Relate Rule',
+          iconClassName: 'heart',
+          subMenu: relateStrategySubMenu,
+        });
     }
   }
   // if (
