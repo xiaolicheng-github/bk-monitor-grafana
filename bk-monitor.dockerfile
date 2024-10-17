@@ -33,7 +33,7 @@ COPY emails emails
 ENV NODE_ENV production
 RUN yarn build
 
-FROM --platform=linux/${CHIP} bitnami/grafana:10.4.2
+FROM --platform=linux/${CHIP} bitnami/grafana:10.4.10
 
 USER root
 
