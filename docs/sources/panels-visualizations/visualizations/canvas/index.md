@@ -15,15 +15,41 @@ labels:
     - oss
 title: Canvas
 weight: 100
+refs:
+  data-links:
+    - pattern: /docs/grafana/
+      destination: /docs/grafana/<GRAFANA_VERSION>/panels-visualizations/configure-data-links/
+    - pattern: /docs/grafana-cloud/
+      destination: /docs/grafana-cloud/visualizations/panels-visualizations/configure-data-links/
+  add-field-from-calculation-transform:
+    - pattern: /docs/grafana/
+      destination: /docs/grafana/<GRAFANA_VERSION>/panels-visualizations/query-transform-data/transform-data/#add-field-from-calculation
+    - pattern: /docs/grafana-cloud/
+      destination: /docs/grafana-cloud/visualizations/panels-visualizations/query-transform-data/transform-data/#add-field-from-calculation
 ---
 
 # Canvas
 
-Canvases combine the power of Grafana with the flexibility of custom elements. Canvases are extensible form-built visualizations that allow you to explicitly place elements within static and dynamic layouts. This empowers you to design custom visualizations and overlay data in ways that aren't possible with standard Grafana panels, all within Grafana's UI. If you've used popular UI and web design tools, then designing canvases will feel very familiar.
+Canvases combine the power of Grafana with the flexibility of custom elements.
+They are extensible visualizations that allow you to add and arrange elements wherever you want within unstructured static and dynamic layouts.
+This lets you design custom visualizations and overlay data in ways that aren't possible with standard Grafana visualizations, all within the Grafana UI.
 
-> We would love your feedback on Canvas. Please check out the [open Github issues](https://github.com/grafana/grafana/issues?page=1&q=is%3Aopen+is%3Aissue+label%3Aarea%2Fpanel%2Fcanvas) and [submit a new feature request](https://github.com/grafana/grafana/issues/new?assignees=&labels=type%2Ffeature-request,area%2Fpanel%2Fcanvas&title=Canvas:&projects=grafana-dataviz&template=1-feature_requests.md) as needed.
+{{< video-embed src="/static/img/docs/canvas-panel/canvas-beta-overview-9-2-0.mp4" max-width="750px" alt="Canvas beta overview" >}}
 
-{{< video-embed src="/static/img/docs/canvas-panel/canvas-beta-overview-9-2-0.mp4" max-width="750px" caption="Canvas beta overview" >}}
+If you've used popular UI and web design tools, then designing canvases will feel very familiar.
+With all of these dynamic elements, there's almost no limit to what a canvas can display.
+
+{{< admonition type="note" >}}
+We'd love your feedback on the canvas visualization. Please check out the [open Github issues](https://github.com/grafana/grafana/issues?page=1&q=is%3Aopen+is%3Aissue+label%3Aarea%2Fpanel%2Fcanvas) and [submit a new feature request](https://github.com/grafana/grafana/issues/new?assignees=&labels=type%2Ffeature-request,area%2Fpanel%2Fcanvas&title=Canvas:&projects=grafana-dataviz&template=1-feature_requests.md) as needed.
+{{< /admonition >}}
+
+## Supported data formats
+
+The canvas visualization is unique in that it doesn't have any specific data requirements. You can even start adding and configuring visual elements without providing any data. However, any data you plan to consume should be accessible through supported Grafana data sources and structured in a way that ensures smooth integration with your custom elements.
+
+If your canvas is going to update in real time, your data should support refreshes at your desired intervals without degrading the user experience.
+
+You can tie [Elements](#elements) and [Connections](#connections) to data through options like text, colors, and background pattern images, etc. available in the canvas visualization.
 
 ## Elements
 
@@ -66,6 +92,8 @@ A button click will only trigger an API call when [inline editing](#inline-editi
 {{% /admonition %}}
 
 {{< video-embed src="/media/docs/grafana/2023-20-10-Canvas-Button-Element-Enablement-Video.mp4" max-width="750px" caption="Canvas button element demo" >}}
+
+{{< docs/play title="Canvas Visualization: Buttons" url="https://play.grafana.org/d/c9ea65f5-ed5a-45cf-8fb7-f82af7c3afdf/" >}}
 
 ## Connections
 
@@ -137,7 +165,7 @@ The inline editing toggle lets you lock or unlock the canvas. When turned off th
 
 ### Data links
 
-Canvases support [data links](https://grafana.com/docs/grafana/latest/panels-visualizations/configure-data-links/). You can create a data link for a metric-value element and display it for all elements that use the field name by following these steps:
+Canvases support [data links](ref:data-links) for all elements except drone and button elements. You can add a data link by following these steps:
 
 1. Set an element to be tied to a field value.
 1. Turn off the inline editing toggle.
@@ -148,7 +176,7 @@ Canvases support [data links](https://grafana.com/docs/grafana/latest/panels-vis
 1. Hover over the element to display the data link tooltip.
 1. Click on the element to be able to open the data link.
 
-If multiple elements use the same field name, and you want to control which elements display the data link, you can create a unique field name using the [add field from calculation transform](https://grafana.com/docs/grafana/latest/panels-visualizations/query-transform-data/transform-data/#add-field-from-calculation). The alias you create in the transformation will appear as a field you can use with an element.
+If multiple elements use the same field name, and you want to control which elements display the data link, you can create a unique field name using the [add field from calculation transform](ref:add-field-from-calculation-transform). The alias you create in the transformation will appear as a field you can use with an element.
 
 1. In the panel editor for the canvas, click the **Transform** tab.
 1. Select **Add field from calculation** from the list of transformations, or click **+ Add transformation** to display the list first.
@@ -158,3 +186,23 @@ If multiple elements use the same field name, and you want to control which elem
 1. Reference the new unique field alias to create the element and field override.
 
 {{< video-embed src="/media/docs/grafana/canvas-data-links-9-4-0.mp4" max-width="750px" caption="Data links demo" >}}
+
+## Panel options
+
+{{< docs/shared lookup="visualizations/panel-options.md" source="grafana" version="<GRAFANA_VERSION>" >}}
+
+## Standard options
+
+{{< docs/shared lookup="visualizations/standard-options.md" source="grafana" version="<GRAFANA_VERSION>" >}}
+
+## Thresholds
+
+{{< docs/shared lookup="visualizations/thresholds-options-2.md" source="grafana" version="<GRAFANA_VERSION>" >}}
+
+## Value mappings
+
+{{< docs/shared lookup="visualizations/value-mappings-options.md" source="grafana" version="<GRAFANA_VERSION>" >}}
+
+## Field overrides
+
+{{< docs/shared lookup="visualizations/overrides-options.md" source="grafana" version="<GRAFANA_VERSION>" >}}
