@@ -7,7 +7,7 @@ import { useSelector } from 'app/types';
 
 import { DashboardModel, PanelModel } from '../../state';
 import { getPanelMenu } from '../../utils/getPanelMenu';
-
+const isEnLang = !!document.cookie?.includes('blueking_language=en');
 interface PanelHeaderMenuProviderApi {
   items: PanelMenuItem[];
 }
@@ -33,22 +33,23 @@ export function PanelHeaderMenuProvider({ panel, dashboard, loadingState, childr
         .then((datasource: any) => {
           if (datasource?.getRelateStrategy) {
             datasource
-              ?.getRelateStrategy({
+              .getRelateStrategy({
                 dashboard_id: dashboard.uid,
                 panel_id: panel.id,
               })
               .then(() => {
                 item.type = 'submenu';
+                item.text = (!isEnLang ? '关联策略' : 'Relate Rule') + `(${2})`;
                 item.subMenu = [
                   {
-                    text: 'ddddd',
+                    text: '【Monitor】logComponent…MemoryHighLoad',
                     onClick: (event: React.MouseEvent<any>) => {
                       event.preventDefault();
                       console.info('ddddddddddd');
                     },
                   },
                   {
-                    text: 'XXXX',
+                    text: '【Monitor】logComponentCPUHighLoad',
                     onClick: (event: React.MouseEvent<any>) => {
                       event.preventDefault();
                       console.info('XXXX');

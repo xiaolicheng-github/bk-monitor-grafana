@@ -251,11 +251,14 @@ export const MonitorStrategy = ({ panel, dashboard, isOpen, onHideModal, monitor
       if (!item.found) {
         continue;
       }
+      const variable = variableStateMap[item.variableName];
+      if (variable === undefined) {
+        continue;
+      }
       let value = [];
       if (item.format) {
         value = [item.value];
       } else {
-        const variable = variableStateMap[item.variableName];
         if (variable?.selectedValues?.length) {
           value = variable.selectedValues.map((v) => v.value);
         } else {

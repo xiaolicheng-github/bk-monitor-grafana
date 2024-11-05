@@ -254,31 +254,34 @@ export const getMetricId = (
  * @returns {number} 转换后的汇聚周期 单位固定 s
  */
 export const replaceInterval = (inter: string | number, unit: string) => {
-  let interval: string | number = inter;
+  let interval: number | string = inter;
   if (typeof interval === 'string' && interval !== 'auto') {
-    interval = +getTemplateSrv()
-      .replace(interval)
-      .replace(/(\d+)(.*)/, (match: string, p1: string, p2: string) => {
-        let str: string | number = p1 || '10';
-        switch (p2) {
-          case 'm':
-            str = +p1 * 60;
-            break;
-          case 'h':
-            str = +p1 * 60 * 60;
-            break;
-          case 'd':
-            str = +p1 * 60 * 60 * 24;
-            break;
-          case 'w':
-            str = +p1 * 60 * 60 * 24 * 7;
-            break;
-          default:
-            str = (+p1 || 10) * (unit === 'm' ? 60 : 1);
-            break;
-        }
-        return str.toString();
-      });
+    const intervalStr = getTemplateSrv().replace(interval);
+    if (['$__interval_ms'].includes(interval)) {
+      // ms 转换为 s
+      return +intervalStr / 1000;
+    }
+    interval = +intervalStr.replace(/(\d+)(.*)/, (match: string, p1: string, p2: string) => {
+      let str: number | string = p1 || '10';
+      switch (p2) {
+        case 'm':
+          str = +p1 * 60;
+          break;
+        case 'h':
+          str = +p1 * 60 * 60;
+          break;
+        case 'd':
+          str = +p1 * 60 * 60 * 24;
+          break;
+        case 'w':
+          str = +p1 * 60 * 60 * 24 * 7;
+          break;
+        default:
+          str = (+p1 || 10) * (unit === 'm' ? 60 : 1);
+          break;
+      }
+      return str.toString();
+    });
   } else if (typeof interval === 'number') {
     if (unit === 'm') {
       interval = interval * 60;
