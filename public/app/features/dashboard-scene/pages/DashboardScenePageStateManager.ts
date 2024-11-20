@@ -90,11 +90,12 @@ export class DashboardScenePageStateManager extends StateManagerBase<DashboardSc
         const currentPath = locationService.getLocation().pathname;
         if (dashboardUrl !== currentPath) {
           // Spread current location to persist search params used for navigation
-          // locationService.replace({
-          //   ...locationService.getLocation(),
-          //   pathname: dashboardUrl,
-          // });
-          locationService.replace(currentPath);
+          locationService.replace({
+            ...locationService.getLocation(),
+            pathname: dashboardUrl,
+          });
+          window.parent?.postMessage({ pathname: dashboardUrl }, '*');
+          // locationService.replace(currentPath);
           console.log('not correct url correcting', dashboardUrl, currentPath);
         }
       }
