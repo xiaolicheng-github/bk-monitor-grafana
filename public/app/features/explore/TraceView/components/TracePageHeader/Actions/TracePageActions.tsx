@@ -63,6 +63,7 @@ export default function TracePageActions(props: TracePageActionsProps) {
   return (
     <div className={styles.TracePageActions}>
       <a
+        style={{ display: 'none' }}
         href="https://forms.gle/RZDEx8ScyZNguDoC8"
         className={styles.feedback}
         title="Share your thoughts about tracing in Grafana."
