@@ -173,6 +173,7 @@ export interface PanelMenuItem {
   shortcut?: string;
   href?: string;
   subMenu?: PanelMenuItem[];
+  customRender?: () => any;
 }
 
 /**

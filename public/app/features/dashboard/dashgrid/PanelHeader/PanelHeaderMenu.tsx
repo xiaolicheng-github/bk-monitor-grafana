@@ -67,7 +67,9 @@ export function PanelHeaderMenu({ items, onClickAddStrategy }: Props) {
               onClick={(e, payload) => handleItemClick(item, e, payload)}
               shortcut={item.shortcut}
               testId={selectors.components.Panels.Panel.menuItems(item.text)}
-            />
+            >
+              {item.customRender ? item.customRender() : undefined}
+            </Menu.Item>
           );
       }
     });

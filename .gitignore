@@ -203,6 +203,8 @@ deployment_tools_config.json
 
 .betterer.cache
 
+/.nx/cache/*
+
 # Temporary file for backporting PRs
 .pr-body.txt
 
