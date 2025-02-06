@@ -52,28 +52,30 @@ export function PanelHeaderMenuProvider({ panel, dashboard, loadingState, childr
                   // text: strategyItem.strategy_name,
                   onClick: (event: React.MouseEvent<any>) => {
                     event.preventDefault();
-                    console.info('ddddddddddd');
+                    localStorage.setItem('grafana-related-strategy', JSON.stringify(strategyItem));
+                    const monitorUrl = `${location.href.split('/grafana')[0]}/?bizId=${
+                      (window.grafanaBootData as any).user.orgName
+                    }#/strategy-config/edit/${strategyItem.strategy_id}&grafana_related_strategy=true`;
+                    window.open(monitorUrl);
                   },
                   customRender: () => (
                     <span className={cx(styles.strategyItem)}>
                       <span>{strategyItem.strategy_name}</span>
-                      <span>
-                        <svg
-                          viewBox="0 0 1024 1024"
-                          version="1.1"
-                          xmlns="http://www.w3.org/2000/svg"
-                          p-id="14668"
-                          width={14}
-                          height={14}
-                          className={cx(styles.strategyLink)}
-                        >
-                          <path
-                            fill="#3A84FF"
-                            d="M981.333333 1024H42.666667a42.666667 42.666667 0 0 1-42.666667-42.666667V42.666667a42.666667 42.666667 0 0 1 42.666667-42.666667h341.333333a42.666667 42.666667 0 0 1 0 85.333333H85.333333v853.333334h853.333334V618.666667a42.666667 42.666667 0 0 1 85.333333 0v362.666666a42.666667 42.666667 0 0 1-42.666667 42.666667z m0-576a42.666667 42.666667 0 0 1-42.666666-42.666667V152.746667L315.306667 796.8a48 48 0 0 1-67.2 0 47.36 47.36 0 0 1 0-66.133333L871.893333 85.333333H640a42.666667 42.666667 0 0 1 0-85.333333h341.333333a42.666667 42.666667 0 0 1 42.666667 42.666667v362.666666a42.666667 42.666667 0 0 1-42.666667 42.666667z"
-                            p-id="14669"
-                          ></path>
-                        </svg>
-                      </span>
+                      <svg
+                        viewBox="0 0 1024 1024"
+                        version="1.1"
+                        xmlns="http://www.w3.org/2000/svg"
+                        p-id="14668"
+                        width={14}
+                        height={14}
+                        className={cx(styles.strategyLink)}
+                      >
+                        <path
+                          fill="#3A84FF"
+                          d="M981.333333 1024H42.666667a42.666667 42.666667 0 0 1-42.666667-42.666667V42.666667a42.666667 42.666667 0 0 1 42.666667-42.666667h341.333333a42.666667 42.666667 0 0 1 0 85.333333H85.333333v853.333334h853.333334V618.666667a42.666667 42.666667 0 0 1 85.333333 0v362.666666a42.666667 42.666667 0 0 1-42.666667 42.666667z m0-576a42.666667 42.666667 0 0 1-42.666666-42.666667V152.746667L315.306667 796.8a48 48 0 0 1-67.2 0 47.36 47.36 0 0 1 0-66.133333L871.893333 85.333333H640a42.666667 42.666667 0 0 1 0-85.333333h341.333333a42.666667 42.666667 0 0 1 42.666667 42.666667v362.666666a42.666667 42.666667 0 0 1-42.666667 42.666667z"
+                          p-id="14669"
+                        ></path>
+                      </svg>
                     </span>
                   ),
                 }));
