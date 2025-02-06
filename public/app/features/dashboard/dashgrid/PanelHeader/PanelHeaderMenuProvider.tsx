@@ -55,7 +55,7 @@ export function PanelHeaderMenuProvider({ panel, dashboard, loadingState, childr
                     localStorage.setItem('grafana-related-strategy', JSON.stringify(strategyItem));
                     const monitorUrl = `${location.href.split('/grafana')[0]}/?bizId=${
                       (window.grafanaBootData as any).user.orgName
-                    }#/strategy-config/edit/${strategyItem.strategy_id}&grafana_related_strategy=true`;
+                    }#/strategy-config/edit/${strategyItem.strategy_id}?grafana_related_strategy=true`;
                     window.open(monitorUrl);
                   },
                   customRender: () => (
