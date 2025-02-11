@@ -52,10 +52,9 @@ export function PanelHeaderMenuProvider({ panel, dashboard, loadingState, childr
                   // text: strategyItem.strategy_name,
                   onClick: (event: React.MouseEvent<any>) => {
                     event.preventDefault();
-                    localStorage.setItem('grafana-related-strategy', JSON.stringify(strategyItem));
                     const monitorUrl = `${location.href.split('/grafana')[0]}/?bizId=${
                       (window.grafanaBootData as any).user.orgName
-                    }#/strategy-config/edit/${strategyItem.strategy_id}?grafana_related_strategy=true`;
+                    }#/strategy-config/detail/${strategyItem.strategy_id}`;
                     window.open(monitorUrl);
                   },
                   customRender: () => (
